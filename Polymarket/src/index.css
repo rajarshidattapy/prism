@@ -1,0 +1,230 @@
+@import "@fontsource/sora/400.css";
+@import "@fontsource/sora/500.css";
+@import "@fontsource/sora/600.css";
+@import "@fontsource/sora/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* New Emerald/Teal theme - fresh and modern */
+    --background: 220 20% 4%;
+    --foreground: 0 0% 95%;
+
+    --card: 220 20% 7%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 220 20% 7%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 16% 12%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 220 16% 10%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 16% 15%;
+    --input: 220 16% 12%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.75rem;
+
+    /* Custom design tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(160, 84%, 39%) 0%, hsl(180, 70%, 40%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220, 20%, 8%) 0%, hsl(220, 20%, 5%) 100%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(160, 84%, 39%, 0.12) 0%, transparent 70%);
+    --gradient-mesh: linear-gradient(135deg, hsl(160, 84%, 39%, 0.03) 0%, transparent 50%),
+                     linear-gradient(225deg, hsl(220, 60%, 50%, 0.03) 0%, transparent 50%);
+    
+    --shadow-glow: 0 0 50px hsl(160, 84%, 39%, 0.15);
+    --shadow-card: 0 4px 30px hsl(0, 0%, 0%, 0.3);
+    --shadow-elevated: 0 20px 50px hsl(0, 0%, 0%, 0.4);
+
+    --font-heading: 'Sora', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    --sidebar-background: 220 20% 5%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 220 16% 15%;
+    --sidebar-ring: 160 84% 39%;
+  }
+
+  .dark {
+    --background: 220 20% 4%;
+    --foreground: 0 0% 95%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background: hsl(var(--background));
+  }
+
+  body {
+    @apply text-foreground font-body antialiased;
+    font-family: var(--font-body);
+    background: transparent !important;
+    min-height: 100vh;
+  }
+
+  #root {
+    background: transparent;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/60 backdrop-blur-2xl border border-border/40;
+    background-image: var(--gradient-card);
+  }
+
+  .glass-hover {
+    @apply hover:bg-card/80 hover:border-primary/20 transition-all duration-300;
+  }
+
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-primary);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-hover {
+    @apply transition-all duration-300;
+  }
+
+  .glow-hover:hover {
+    box-shadow: 0 0 60px hsl(160, 84%, 39%, 0.25);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  .noise-bg {
+    position: relative;
+  }
+
+  .noise-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(160, 84%, 39%, 0.2); }
+  50% { box-shadow: 0 0 40px hsl(160, 84%, 39%, 0.4); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Selection */
+::selection {
+  background: hsl(160, 84%, 39%, 0.3);
+  color: hsl(var(--foreground));
+}

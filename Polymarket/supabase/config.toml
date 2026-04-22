@@ -1,0 +1,10 @@
+project_id = "fwvtsolzhzcslxtskzqu"
+
+[functions.polymarket-api]
+verify_jwt = false
+
+[functions.wallet-auth]
+verify_jwt = false
+
+[functions.trade-executor]
+verify_jwt = false
