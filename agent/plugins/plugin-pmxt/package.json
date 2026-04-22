@@ -1,0 +1,11 @@
+{
+  "name": "@prism/plugin-pmxt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "@elizaos/core": "^0.1.9",
+    "node-fetch": "^3.3.2"
+  }
+}

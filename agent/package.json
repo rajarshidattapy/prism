@@ -1,0 +1,29 @@
+{
+  "name": "@prism/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/agent.js",
+  "scripts": {
+    "dev": "tsx watch agent.ts",
+    "build": "tsc",
+    "start": "node dist/agent.js"
+  },
+  "dependencies": {
+    "@elizaos/core": "^0.1.9",
+    "@elizaos/client-direct": "^0.1.9",
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.91.8",
+    "@solana/spl-token": "^0.4.6",
+    "bs58": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "@prism/plugin-pmxt": "workspace:*",
+    "@prism/plugin-prism": "workspace:*",
+    "@prism/plugin-switchboard": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.0"
+  }
+}

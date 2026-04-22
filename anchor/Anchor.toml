@@ -1,0 +1,19 @@
+[features]
+seeds = true
+skip-lint = false
+
+[programs.localnet]
+prism_markets = "PRiSMVzV9vV1GqSsGaijT9tCGANWGFCj9yXv5x8vFJ3"
+
+[programs.devnet]
+prism_markets = "PRiSMVzV9vV1GqSsGaijT9tCGANWGFCj9yXv5x8vFJ3"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

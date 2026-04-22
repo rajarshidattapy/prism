@@ -1,0 +1,64 @@
+{
+  "personas": [
+    {
+      "id": "retail_bull",
+      "name": "Retail Bull",
+      "description": "Optimistic retail investor following social media trends",
+      "bias": 0.25,
+      "weight": 0.30,
+      "traits": ["fomo_driven", "news_reactive", "momentum_follower"]
+    },
+    {
+      "id": "crypto_native",
+      "name": "Crypto Native",
+      "description": "Long-term holder with deep on-chain knowledge",
+      "bias": 0.10,
+      "weight": 0.20,
+      "traits": ["on_chain_analyst", "contrarian_at_extremes", "defi_aware"]
+    },
+    {
+      "id": "institutional_trader",
+      "name": "Institutional Trader",
+      "description": "Quantitative trader using macro signals",
+      "bias": 0.00,
+      "weight": 0.20,
+      "traits": ["macro_driven", "risk_adjusted", "systematic"]
+    },
+    {
+      "id": "bear_skeptic",
+      "name": "Bear Skeptic",
+      "description": "Risk-averse investor with negative market bias",
+      "bias": -0.30,
+      "weight": 0.15,
+      "traits": ["fundamentals_focused", "risk_averse", "regulatory_concerned"]
+    },
+    {
+      "id": "defi_degen",
+      "name": "DeFi Degen",
+      "description": "High-risk appetite DeFi participant seeking yield",
+      "bias": 0.35,
+      "weight": 0.10,
+      "traits": ["yield_seeking", "high_risk", "protocol_aware"]
+    },
+    {
+      "id": "neutral_observer",
+      "name": "Neutral Observer",
+      "description": "Data-driven analyst with no directional bias",
+      "bias": 0.00,
+      "weight": 0.05,
+      "traits": ["data_driven", "unbiased", "probabilistic"]
+    }
+  ],
+  "sentiment_modifiers": {
+    "positive_keywords": ["bullish", "moon", "pump", "surge", "adoption", "institutional", "approved", "launch"],
+    "negative_keywords": ["bearish", "crash", "dump", "ban", "hack", "exploit", "SEC", "regulation", "FUD"],
+    "neutral_keywords": ["stable", "sideways", "consolidation", "range", "wait"]
+  },
+  "simulation_config": {
+    "default_n_agents": 10000,
+    "max_n_agents": 1000000,
+    "noise_factor": 0.15,
+    "convergence_threshold": 0.01,
+    "max_iterations": 100
+  }
+}

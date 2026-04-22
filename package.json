@@ -1,0 +1,27 @@
+{
+  "name": "prism",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "agent",
+    "agent/plugins/plugin-pmxt",
+    "agent/plugins/plugin-prism",
+    "agent/plugins/plugin-switchboard",
+    "ui"
+  ],
+  "scripts": {
+    "dev:ui": "bun --cwd ui dev",
+    "dev:agent": "bun --cwd agent dev",
+    "build:ui": "bun --cwd ui build",
+    "build:agent": "bun --cwd agent build",
+    "test:anchor": "cd anchor && anchor test",
+    "sim:run": "python simulation/scripts/run_matrix.py",
+    "sim:attest": "python simulation/scripts/generate_attestation.py",
+    "deploy:nosana": "bun scripts/deploy_nosana.ts",
+    "setup": "bash scripts/setup_local.sh"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.0"
+  }
+}
