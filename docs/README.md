@@ -1,180 +1,193 @@
 # PRISM
 
-> **The AI-native prediction market infrastructure and simulation engine built for the agentic economy.**
+**AI-native prediction market infrastructure powered by MiroFish backed ElizaOS agents on Solana.**
 
-PRISM enables autonomous agents to **discover, analyze, trade, and launch prediction markets through a unified API**. By combining multi-exchange aggregation with verifiable multi-agent simulations, PRISM transforms fragmented human-native prediction markets into **agent-native financial infrastructure**.
-
-
-Through a single intelligent interface, PRISM allows agents to:
-* **Discover & Execute:** Route trades across Polymarket, Kalshi, and future integrations.
-* **Prompt-to-Market:** Spin up custom Solana-based prediction markets using natural language (the `prism create` API).
-* **Simulate & Underwrite:** Utilize **MiroFish + OASIS** to run massive 1-million-agent simulations to predict event outcomes (e.g., crowd sentiment, market reactions).
-* **Trade the Spread:** Create markets that bet on the delta between the AI's simulated prediction and the real-world outcome.
+PRISM lets autonomous agents discover, simulate, and launch prediction markets through a single terminal interface. The core idea: run a million-agent OASIS simulation *before* a real-world event, commit the result on-chain, and create a market that bets on whether reality matches the simulation.
 
 ---
 
-## The Problem
+## How it works
 
-1.  **Fragmented Execution:** Every exchange has different APIs, orderbook formats, market schemas, and execution logic, making it impossible for autonomous agents to reason and trade natively.
-2.  **Subjective Resolution Limits:** Current markets struggle with subjective events (e.g., "Will the public react negatively to this SEC policy?").
-3.  **Lack of Verifiable Compute:** Agents cannot currently trust the outputs of other AI models on-chain without massive trust assumptions.
-
----
-
-## The Solution
-
-PRISM acts as an **AI-native market operating system** and **simulation underwriter**.
-
-It combines:
-* Unified market discovery and semantic matching.
-* Autonomous trade execution via **ElizaOS**.
-* Custom market creation on **Solana** via the Context CLI.
-* Cryptographically verifiable agent simulations running on **Nosana GPUs**.
-* Real-world resolution via decentralized NLP oracles (**Switchboard V3**).
-
----
-
-## Core Features
-
-### 1. Unified Trading Layer
-Built on top of **PMXT**, providing a single abstraction layer for existing platforms.
-```typescript
-findMarket()
-estimateProbability()
-placeOrder()
-monitorPnL()
+```
+User types: prism create "Will crypto sentiment turn bearish after the Fed rate hike?"
+                              ↓
+              ElizaOS agent (plugin-prism) parses intent
+                              ↓
+              MiroFish backend runs OASIS simulation
+              (N synthetic agents react to seed event)
+                              ↓
+              SHA-256 hash of result committed on-chain
+              (tamper-evident — done before real event)
+                              ↓
+              Solana PDA derived: market is live
+              YES bps seeded from simulation probability
 ```
 
-### 2. Autonomous Agent Execution (ElizaOS v2)
-The PRISM agent interprets natural language prompts, reasons over event probabilities, searches live markets, simulates trades, and auto-exits based on risk thresholds.
-
-### 3. The "Context" API: Prompt-to-Market
-Agents can dynamically spin up new markets on Solana using natural language. The Intent Engine parses the prompt and constructs the deterministic Solana transaction.
-```bash
-> prism create "Will real-world Farcaster sentiment match OASIS's 72% approval rating within 48 hours?"
-Creating market...
-Market PDA: PRiSM1111...3f2e | YES: 62% / NO: 38%
-Oracle seeded, order book open
-```
-
-### 4. MiroFish Simulation Underwriter & Error Markets
-Instead of just asking YES/NO questions, PRISM uses **MiroFish (OASIS)** to simulate 1 million AI agents reacting to a seed event. 
-* **The Output:** "OASIS predicts 68% negative sentiment."
-* **The Market:** "Will real-world sentiment deviate from the 68% OASIS benchmark by more than ±5%?"
-Agents trade the spread between the simulation and reality. 
-
-### 5. Multi-Agent Consensus Oracles
-To resolve subjective "Simulation vs. Reality" markets, PRISM utilizes **Switchboard V3** to spin up a fleet of lightweight consensus agents that scrape X, Reddit, and Farcaster, run NLP sentiment analysis, and push the median score on-chain.
+Markets resolve against real-world data aggregated by Switchboard V3 oracles (Twitter, Reddit, Farcaster).
 
 ---
 
-## Architecture Flow
+## Repo structure
 
-```text
-User/Agent Prompt
-       ↓
-Intent Parser Agent (ElizaOS)
-       ↓
-[Existing Market?] ──(YES)──> Unified Trading Abstraction (PMXT) ──> Polymarket/Kalshi
-       ↓
-     (NO)
-       ↓
-Market Generation Agent
-       ↓
-OASIS 1M Agent Simulation (Nosana GPU + TEE) ──> Attests baseline probability
-       ↓
-Solana Smart Contract (Anchor PDA Creation)
-       ↓
-Switchboard V3 NLP Scraper Agent (Resolution Oracle)
+```
+prism/
+├── agent/                  # ElizaOS agent (port 3001)
+│   ├── agent.ts            # runtime entry point
+│   ├── characters/         # PRISM Orchestrator persona
+│   ├── plugins/
+│   │   ├── plugin-pmxt/    # Polymarket + Kalshi aggregator
+│   │   ├── plugin-prism/   # market creation + oracle pipeline
+│   │   └── plugin-switchboard/  # NLP consensus oracle
+│   └── src/                # actions, evaluators, providers
+│
+├── backend/                # MiroFish OASIS backend (port 5001)
+│   ├── app/                # Flask API
+│   ├── simulation/
+│   │   ├── scripts/        # prism_oracle.py, run_matrix.py, analyze_actions.py
+│   │   ├── models/         # sentiment_parser.py, agent_prompts.json
+│   │   └── mirofish_client.py
+│   └── locales/            # i18n strings
+│
+├── ui/                     # Next.js dashboard (port 3000)
+│   ├── app/                # Terminal, Markets, Simulation tabs
+│   ├── components/         # TerminalUI, MarketDashboard
+│   ├── hooks/              # useSolanaWallet, usePrismMarket
+│   └── lib/                # pmxt-client, utils
+│
+├── anchor/                 # Solana program (Rust/Anchor)
+│   └── programs/prism_markets/
+│
+├── nosana/                 # Nosana GPU job definitions
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── oasis_simulation.json
+│   └── prism_agent.json
+│
+└── polymarket/             # Standalone Polymarket UI (Vite/React)
 ```
 
 ---
 
-## Deep Nosana GPU Integration
+## Quickstart
 
-PRISM relies heavily on **Nosana decentralized GPU infrastructure** for heavy, verifiable workloads, maximizing the challenge score:
+### Prerequisites
 
-* **The Simulation Engine:** Running the computationally massive **MiroFish/OASIS 1-million-agent matrix** requires intense GPU compute to generate the baseline prediction before the market opens.
-* **Probability Inference:** Running deep-learning event probability models, confidence estimation, and volatility analysis.
-* **High-Frequency Signal Processing:** Processing orderbook snapshots and sentiment feeds in real-time to adjust agent trading strategies.
+- Node 22+, Bun 1.3+
+- Python 3.11 (required for `camel-oasis` — Python 3.14 won't work)
+- `py -3.11` available on Windows
 
----
-
-## Tech Stack
-
-* **Agent Framework:** ElizaOS v2
-* **Compute:** Nosana
-* **On-Chain Infra:** Solana, Anchor (Rust)
-* **Oracles:** Switchboard V3
-* **Simulation:** MiroFish, OASIS
-* **Trading Abstraction:** PMXT, polyrec
-* **Backend:** TypeScript / Node.js, Bun, Docker
-
----
-
-## Local Setup
+### 1. Install JS dependencies
 
 ```bash
-git clone https://github.com/rajarshidattapy/prism
-cd prism
-
-# One-shot setup (installs deps, configures solana devnet, builds anchor)
-bash scripts/setup_local.sh
-
-cp .env.example .env
-# → Fill in OPENAI_API_KEY, SOLANA_PRIVATE_KEY, POLYMARKET_API_KEY, etc.
+bun install
 ```
 
-Start services:
+### 2. Configure environment
+
 ```bash
-bun run dev:ui      # UI  → http://localhost:3000
-bun run dev:agent   # Agent → http://localhost:3001
+# Agent env (minimum required)
+cp .env.example agent/.env
+# Edit agent/.env and set OPENAI_API_KEY=sk-...
+
+# Backend env (for live OASIS simulations)
+# Edit backend/.env and set:
+#   LLM_API_KEY=sk-...
+#   LLM_BASE_URL=https://api.openai.com/v1
+#   LLM_MODEL_NAME=gpt-4o-mini
+#   ZEP_API_KEY=...   (get free key at getzep.com)
 ```
 
-Run a simulation locally:
+### 3. Start services
+
+Open 3 terminals:
+
 ```bash
-python simulation/scripts/run_matrix.py \
+# Terminal 1 — UI
+bun run dev:ui
+# → http://localhost:3000
+
+# Terminal 2 — ElizaOS agent
+bun run dev:agent
+# → http://localhost:3001
+
+# Terminal 3 — MiroFish backend (needs Python 3.11 venv)
+cd backend && venv311/Scripts/python.exe run.py
+# → http://localhost:5001
+```
+
+The UI runs standalone with mock data even without the agent or backend.
+
+---
+
+## Terminal commands
+
+With the agent running, type in the **Terminal tab** at `localhost:3000`:
+
+| Command | What it does |
+|---------|-------------|
+| `prism create "question"` | Run oracle simulation → derive Solana PDA → seed market odds |
+| `prism search <query>` | Search live Polymarket + Kalshi markets |
+| `prism oracle <topic>` | Run Switchboard NLP consensus |
+| `prism status` | Show agent health and active markets |
+| `help` | List all commands |
+| `clear` | Clear terminal output |
+
+---
+
+## Run simulations directly
+
+No API keys needed — statistical fallback works immediately:
+
+```bash
+# Fallback oracle (no keys, instant)
+python backend/simulation/scripts/prism_oracle.py \
   --question "Will ETH break $5k before Q2 end?" \
-  --context "ETF approved, institutional inflow strong" \
-  --n_agents 10000
+  --context "Spot ETH ETF approved, institutional inflow strong" \
+  --fallback
 
-# Generate SHA-256 attestation for on-chain seeding
-python simulation/scripts/generate_attestation.py
+# Live OASIS oracle (needs backend running + Zep graph ID)
+python backend/simulation/scripts/prism_oracle.py \
+  --question "Will 60%+ react negatively to the new crypto tax?" \
+  --context "Government proposes 30% capital gains tax" \
+  --graph-id YOUR_ZEP_GRAPH_ID \
+  --platform reddit \
+  --rounds 5
 ```
 
-Run Anchor tests:
+Output includes a SHA-256 attestation hash and the exact `seed_simulation_result(hash, bps)` call for on-chain commitment.
+
+---
+
+## Solana program (optional for demo)
+
+Markets derive PDAs and attestations work without on-chain deployment. To deploy:
+
 ```bash
-bun run test:anchor
+# Install Solana + Anchor (PowerShell as admin)
+winget install Solana.Solana
+cargo install --git https://github.com/coral-xyz/anchor avm --locked
+avm install latest && avm use latest
+
+# Deploy to devnet
+solana config set --url devnet
+solana-keygen new --outfile ~/.config/solana/id.json
+solana airdrop 2
+cd anchor && anchor build && anchor deploy
 ```
 
 ---
 
-## Docker & Nosana Deployment
+## Key env variables
 
-Build and push the image:
-```bash
-docker build -t prism-agent .
-docker push yourusername/prism-agent:latest
-```
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `OPENAI_API_KEY` | `agent/.env` | ElizaOS agent LLM |
+| `SOLANA_PRIVATE_KEY` | `agent/.env` | On-chain writes (base58) |
+| `MIROFISH_GRAPH_ID` | `agent/.env` | Zep graph for live OASIS (leave blank for fallback) |
+| `LLM_API_KEY` | `backend/.env` | MiroFish agent LLMs |
+| `ZEP_API_KEY` | `backend/.env` | Agent persona memory |
 
-Deploy using Nosana CLI:
-```bash
-nosana job post \
-  --file ./nos_job_def/prism_job.json \
-  --market nvidia-4090
-```
+Full reference: `.env.example`
 
 ---
 
-## Why PRISM Matters
-
-PRISM transforms prediction markets from human-native UI playgrounds into **agent-native financial infrastructure**. By introducing verifiable multi-agent simulations as the base layer for new derivative markets, PRISM creates a closed-loop economy where AI agents act as the underwriters, the traders, and the judges. 
-
-Built for the future of the agentic economy.
-
----
-
-## Project Links & Core Team
-
-* **Demo Video:** `< 1 min`
-* **Live Nosana Deployment:** `Nosana deployment URL`
