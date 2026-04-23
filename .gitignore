@@ -5,3 +5,25 @@ build/
 .next/
 target/
 .claude/
+
+# Solana / Anchor
+anchor/.anchor/
+anchor/target/
+
+# Simulation outputs
+simulation/outputs/*.json
+!simulation/outputs/.keep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keys — never commit
+*.keypair.json
+id.json

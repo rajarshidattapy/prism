@@ -4,17 +4,6 @@
 
 PRISM enables autonomous agents to **discover, analyze, trade, and launch prediction markets through a unified API**. By combining multi-exchange aggregation with verifiable multi-agent simulations, PRISM transforms fragmented human-native prediction markets into **agent-native financial infrastructure**.
 
----
-
-## Tagline
-
-**Predict anything with one prompt. Trade the simulation against reality.**
-
----
-
-## What is PRISM?
-
-Prediction markets today are built for humans, restricted to fragmented interfaces, and limited by standard objective outcomes. PRISM reimagines this entire stack for **agents**. 
 
 Through a single intelligent interface, PRISM allows agents to:
 * **Discover & Execute:** Route trades across Polymarket, Kalshi, and future integrations.
@@ -62,9 +51,9 @@ The PRISM agent interprets natural language prompts, reasons over event probabil
 ### 3. The "Context" API: Prompt-to-Market
 Agents can dynamically spin up new markets on Solana using natural language. The Intent Engine parses the prompt and constructs the deterministic Solana transaction.
 ```bash
-> context create "Will real-world Farcaster sentiment match OASIS's 72% approval rating within 48 hours?"
+> prism create "Will real-world Farcaster sentiment match OASIS's 72% approval rating within 48 hours?"
 Creating market...
-Market created: 0xa3f...
+Market PDA: PRiSM1111...3f2e | YES: 62% / NO: 38%
 Oracle seeded, order book open
 ```
 
@@ -129,18 +118,33 @@ PRISM relies heavily on **Nosana decentralized GPU infrastructure** for heavy, v
 git clone https://github.com/rajarshidattapy/prism
 cd prism
 
-bun install
+# One-shot setup (installs deps, configures solana devnet, builds anchor)
+bash scripts/setup_local.sh
+
 cp .env.example .env
+# → Fill in ANTHROPIC_API_KEY, SOLANA_PRIVATE_KEY, POLYMARKET_API_KEY, etc.
 ```
 
-Run development agent:
+Start services:
 ```bash
-elizaos dev
+bun run dev:ui      # UI  → http://localhost:3000
+bun run dev:agent   # Agent → http://localhost:3001
 ```
 
-Frontend:
+Run a simulation locally:
 ```bash
-bun run dev
+python simulation/scripts/run_matrix.py \
+  --question "Will ETH break $5k before Q2 end?" \
+  --context "ETF approved, institutional inflow strong" \
+  --n_agents 10000
+
+# Generate SHA-256 attestation for on-chain seeding
+python simulation/scripts/generate_attestation.py
+```
+
+Run Anchor tests:
+```bash
+bun run test:anchor
 ```
 
 ---

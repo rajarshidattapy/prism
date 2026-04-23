@@ -1,0 +1,37 @@
+{
+  "version": "0.1",
+  "type": "container",
+  "meta": {
+    "trigger": "manual",
+    "description": "PRISM ElizaOS Orchestrator Agent — 24/7 market monitor and autonomous trader"
+  },
+  "ops": [
+    {
+      "type": "container/run",
+      "id": "prism-agent",
+      "args": {
+        "image": "ghcr.io/team-kaizen/prism-agent:latest",
+        "cmd": ["bun", "agent.js"],
+        "env": [
+          { "SOLANA_RPC_URL": { "$$nosana$$": "secret", "name": "SOLANA_RPC_URL" } },
+          { "SOLANA_PRIVATE_KEY": { "$$nosana$$": "secret", "name": "SOLANA_PRIVATE_KEY" } },
+          { "ANTHROPIC_API_KEY": { "$$nosana$$": "secret", "name": "ANTHROPIC_API_KEY" } },
+          { "PRISM_PROGRAM_ID": { "$$nosana$$": "secret", "name": "PRISM_PROGRAM_ID" } },
+          { "POLYMARKET_API_KEY": { "$$nosana$$": "secret", "name": "POLYMARKET_API_KEY" } },
+          { "KALSHI_API_KEY": { "$$nosana$$": "secret", "name": "KALSHI_API_KEY" } },
+          { "SWITCHBOARD_QUEUE": { "$$nosana$$": "secret", "name": "SWITCHBOARD_QUEUE" } },
+          { "TWITTER_BEARER_TOKEN": { "$$nosana$$": "secret", "name": "TWITTER_BEARER_TOKEN" } }
+        ],
+        "gpu": false,
+        "memory": "2Gi",
+        "expose": 3001
+      }
+    }
+  ],
+  "resources": {
+    "cpu": "1",
+    "memory": "2Gi",
+    "storage": "5Gi"
+  },
+  "timeout": 86400
+}

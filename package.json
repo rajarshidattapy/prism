@@ -17,6 +17,9 @@
     "test:anchor": "cd anchor && anchor test",
     "sim:run": "python simulation/scripts/run_matrix.py",
     "sim:attest": "python simulation/scripts/generate_attestation.py",
+    "sim:oracle": "python simulation/scripts/prism_oracle.py",
+    "sim:oracle:live": "python simulation/scripts/prism_oracle.py --graph-id",
+    "mirofish": "cd miro_backend && python run.py",
     "deploy:nosana": "bun scripts/deploy_nosana.ts",
     "setup": "bash scripts/setup_local.sh"
   },
