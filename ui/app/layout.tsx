@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-prism-purple glow-purple font-bold text-sm tracking-widest">
                 ◈ PRISM
               </span>
-              <span className="text-prism-dim text-xs">v0.1.0-mvp</span>
+              <span className="text-prism-dim text-xs">v1</span>
             </div>
             <div className="flex items-center gap-4 text-xs text-prism-dim">
               <span className="flex items-center gap-1">
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           {/* Footer */}
           <footer className="border-t border-[#1a1a2e] px-4 py-2 text-xs text-prism-dim flex justify-between">
-            <span>Nosana × ElizaOS Builders Challenge — Team Kaizen</span>
+            <span></span>
             <span>Solana Devnet</span>
           </footer>
         </div>

@@ -1,0 +1,10 @@
+{
+  "en": {
+    "name": "English",
+    "llmInstruction": "Please respond in English."
+  },
+  "zh": {
+    "name": "Chinese (Simplified)",
+    "llmInstruction": "Please respond in English."
+  }
+}

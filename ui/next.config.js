@@ -2,21 +2,21 @@
 const nextConfig = {
   reactStrictMode: true,
   webpack: (config) => {
-    // Required for Solana/Anchor packages
+    // Stub out Node built-ins — no browser polyfills needed for dashboard-only UI
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
-      crypto: require.resolve("crypto-browserify"),
-      stream: require.resolve("stream-browserify"),
-      url: require.resolve("url"),
-      zlib: require.resolve("browserify-zlib"),
-      http: require.resolve("stream-http"),
-      https: require.resolve("https-browserify"),
-      assert: require.resolve("assert"),
-      os: require.resolve("os-browserify"),
-      path: require.resolve("path-browserify"),
+      crypto: false,
+      stream: false,
+      url: false,
+      zlib: false,
+      http: false,
+      https: false,
+      assert: false,
+      os: false,
+      path: false,
     };
     return config;
   },

@@ -13,10 +13,13 @@ function timestamp(): string {
   return new Date().toLocaleTimeString("en-US", { hour12: false });
 }
 
+// DirectClient routes by name if UUID isn't found — use the character name
+const AGENT_ID = "PRISM%20Orchestrator";
+
 async function sendToAgent(text: string): Promise<string> {
   const agentUrl = (process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3001").replace("ws://", "http://");
   try {
-    const res = await fetch(`${agentUrl}/message`, {
+    const res = await fetch(`${agentUrl}/${AGENT_ID}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, userId: "ui-terminal", roomId: "terminal" }),
@@ -25,7 +28,7 @@ async function sendToAgent(text: string): Promise<string> {
     const data = await res.json();
     return Array.isArray(data) ? data.map((d: any) => d.text).join("\n") : data.text ?? JSON.stringify(data);
   } catch {
-    return `[Agent offline] Command received: "${text}"\nStart the agent with: bun --cwd agent dev`;
+    return `[Agent offline] Command received: "${text}"\nStart the agent with: bun run dev:agent`;
   }
 }
 
@@ -40,10 +43,14 @@ Available commands:
 `.trim();
 
 export default function TerminalUI() {
-  const [lines, setLines] = useState<LogLine[]>([
-    { id: 0, type: "system", text: "PRISM Terminal v0.1.0 — Nosana × ElizaOS Builders Challenge", ts: timestamp() },
-    { id: 1, type: "system", text: 'Type "help" for available commands.', ts: timestamp() },
-  ]);
+  const [lines, setLines] = useState<LogLine[]>([]);
+
+  useEffect(() => {
+    setLines([
+      { id: 0, type: "system", text: "PRISM Terminal v1 ", ts: timestamp() },
+      { id: 1, type: "system", text: 'Type "help" for available commands.', ts: timestamp() },
+    ]);
+  }, []);
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);

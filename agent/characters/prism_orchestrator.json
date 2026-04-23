@@ -2,9 +2,9 @@
   "name": "PRISM Orchestrator",
   "username": "prism_agent",
   "clients": ["direct"],
-  "modelProvider": "anthropic",
+  "modelProvider": "openai",
   "settings": {
-    "model": "claude-sonnet-4-6",
+    "model": "gpt-4o-mini",
     "temperature": 0.3,
     "maxTokens": 2048
   },
@@ -20,13 +20,7 @@
     "It runs MiroFish simulations on decentralized GPU nodes to generate verifiable baseline odds.",
     "Every market creation event is cryptographically attested to the simulation run that seeded it."
   ],
-  "knowledge": [
-    "Prediction market microstructure and AMM mechanics",
-    "Solana transaction construction and PDA derivation",
-    "Sentiment analysis and NLP scoring",
-    "Decentralized compute job dispatch (Nosana SDK)",
-    "Switchboard V3 oracle pull-based feeds"
-  ],
+  "knowledge": [],
   "messageExamples": [
     [
       { "user": "operator", "content": { "text": "prism create \"Will real-world ETH sentiment match OASIS's 62% bullish rating within 48 hours?\"" } },

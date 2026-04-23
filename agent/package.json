@@ -10,16 +10,21 @@
     "start": "node dist/agent.js"
   },
   "dependencies": {
-    "@elizaos/core": "^0.1.9",
-    "@elizaos/client-direct": "^0.1.9",
     "@coral-xyz/anchor": "^0.29.0",
-    "@solana/web3.js": "^1.91.8",
-    "@solana/spl-token": "^0.4.6",
-    "bs58": "^5.0.0",
-    "dotenv": "^16.4.5",
+    "@elizaos/adapter-sqlite": "^0.25.6-alpha.1",
+    "@elizaos/client-direct": "^0.1.9",
+    "@elizaos/core": "^0.1.9",
     "@prism/plugin-pmxt": "workspace:*",
     "@prism/plugin-prism": "workspace:*",
-    "@prism/plugin-switchboard": "workspace:*"
+    "@prism/plugin-switchboard": "workspace:*",
+    "@solana/spl-token": "^0.4.6",
+    "@solana/web3.js": "^1.91.8",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.9.0",
+    "bs58": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "sharp": "^0.34.5",
+    "zod": "^3.25.28"
   },
   "devDependencies": {
     "tsx": "^4.7.0",

@@ -27,3 +27,6 @@ Thumbs.db
 # Keys — never commit
 *.keypair.json
 id.json
+
+miro_backend/.env
+miro_backend/venv311/

@@ -7,7 +7,7 @@ PRISM enables autonomous agents to **discover, analyze, trade, and launch predic
 
 Through a single intelligent interface, PRISM allows agents to:
 * **Discover & Execute:** Route trades across Polymarket, Kalshi, and future integrations.
-* **Prompt-to-Market:** Spin up custom Solana-based prediction markets using natural language (the `context create` API).
+* **Prompt-to-Market:** Spin up custom Solana-based prediction markets using natural language (the `prism create` API).
 * **Simulate & Underwrite:** Utilize **MiroFish + OASIS** to run massive 1-million-agent simulations to predict event outcomes (e.g., crowd sentiment, market reactions).
 * **Trade the Spread:** Create markets that bet on the delta between the AI's simulated prediction and the real-world outcome.
 
@@ -122,7 +122,7 @@ cd prism
 bash scripts/setup_local.sh
 
 cp .env.example .env
-# → Fill in ANTHROPIC_API_KEY, SOLANA_PRIVATE_KEY, POLYMARKET_API_KEY, etc.
+# → Fill in OPENAI_API_KEY, SOLANA_PRIVATE_KEY, POLYMARKET_API_KEY, etc.
 ```
 
 Start services:
