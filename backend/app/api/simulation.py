@@ -2714,3 +2714,57 @@ def close_simulation_env():
             "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+# ── PRISM Oracle endpoint ──────────────────────────────────────────────────────
+# Runs prism_oracle.py (statistical fallback) and returns structured JSON.
+# Used by the SimulationPanel in the UI. No LLM cost — pure statistical sim.
+
+@simulation_bp.route('/oracle', methods=['POST'])
+def run_prism_oracle():
+    import subprocess
+    import sys
+    import json as _json
+    import re
+    from pathlib import Path
+
+    data = request.get_json(silent=True) or {}
+    question = (data.get('question') or '').strip()
+    context  = (data.get('context')  or '').strip()
+    n_agents = int(data.get('n_agents') or 10000)
+    graph_id = (data.get('graph_id') or '').strip()
+
+    if not question:
+        return jsonify({'success': False, 'error': 'question is required'}), 400
+
+    oracle_script = Path(__file__).parent.parent.parent / 'simulation' / 'scripts' / 'prism_oracle.py'
+    if not oracle_script.exists():
+        return jsonify({'success': False, 'error': f'oracle script not found: {oracle_script}'}), 500
+
+    cmd = [sys.executable, str(oracle_script),
+           '--question', question,
+           '--context', context or question,
+           '--platform', 'reddit',
+           '--rounds', '5']
+
+    if graph_id:
+        cmd += ['--graph-id', graph_id]
+    else:
+        cmd.append('--fallback')
+
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        output = proc.stdout + proc.stderr
+
+        match = re.search(r'\{[\s\S]*\}(?![\s\S]*\{)', output)
+        if not match:
+            return jsonify({'success': False, 'error': 'oracle produced no JSON', 'output': output[-2000:]}), 500
+
+        result = _json.loads(match.group(0))
+        result['n_agents'] = n_agents
+        return jsonify({'success': True, 'data': result})
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'oracle timed out (120s)'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

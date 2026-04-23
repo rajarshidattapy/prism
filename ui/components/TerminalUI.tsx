@@ -88,7 +88,41 @@ export default function TerminalUI() {
       return;
     }
     if (cmd === "prism status") {
-      addLine("success", "[PRISM] Agent: ONLINE | Network: devnet | Markets: 1 active");
+      setProcessing(true);
+      addLine("system", "Checking system status...");
+      try {
+        const agentUrl = (process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3001").replace("ws://", "http://");
+        const backendUrl = "http://localhost:5001";
+        const rpcUrl = "https://api.devnet.solana.com";
+
+        const [agentRes, backendRes, rpcRes] = await Promise.allSettled([
+          fetch(`${agentUrl}/health`, { signal: AbortSignal.timeout(2000) }),
+          fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(2000) }),
+          fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getSlot" }),
+            signal: AbortSignal.timeout(3000),
+          }),
+        ]);
+
+        const agentOk = agentRes.status === "fulfilled" && agentRes.value.ok;
+        const backendOk = backendRes.status === "fulfilled" && backendRes.value.ok;
+        const slotData = rpcRes.status === "fulfilled" ? await rpcRes.value.json().catch(() => null) : null;
+        const slot = slotData?.result;
+
+        setLines((prev) => prev.filter((l) => l.text !== "Checking system status..."));
+        addLine("success", [
+          `[PRISM] System status:`,
+          `• ElizaOS agent   ${agentOk ? "ONLINE  :3001" : "OFFLINE — bun run dev:agent"}`,
+          `• MiroFish backend ${backendOk ? "ONLINE  :5001" : "OFFLINE — cd backend && venv311/Scripts/python.exe run.py"}`,
+          `• Solana devnet   ${slot ? `ONLINE  slot #${slot.toLocaleString()}` : "UNREACHABLE"}`,
+        ].join("\n"));
+      } catch {
+        addLine("error", "[PRISM] Status check failed");
+      } finally {
+        setProcessing(false);
+      }
       return;
     }
 

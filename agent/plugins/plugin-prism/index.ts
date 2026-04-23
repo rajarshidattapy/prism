@@ -1,5 +1,6 @@
 import { Action, HandlerCallback, IAgentRuntime, Memory, Plugin, State } from "@elizaos/core";
-import { web3 } from "@coral-xyz/anchor";
+import { web3, AnchorProvider, Program, BN } from "@coral-xyz/anchor";
+import type { Idl } from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import { execFile } from "child_process";
@@ -7,6 +8,53 @@ import { promisify } from "util";
 import path from "path";
 
 const execFileAsync = promisify(execFile);
+
+// ── Inline IDL (mirrors anchor/programs/prism_markets/lib.rs) ─────────────────
+
+const PRISM_IDL: Idl = {
+  version: "0.1.0",
+  name: "prism_markets",
+  instructions: [
+    {
+      name: "initializeMarket",
+      accounts: [
+        { name: "market", isMut: true, isSigner: false },
+        { name: "creator", isMut: true, isSigner: true },
+        { name: "systemProgram", isMut: false, isSigner: false },
+      ],
+      args: [
+        { name: "marketId", type: "string" },
+        { name: "question", type: "string" },
+        { name: "resolutionTimestamp", type: "i64" },
+        { name: "initialYesOdds", type: "u64" },
+      ],
+    },
+    {
+      name: "seedSimulationResult",
+      accounts: [
+        { name: "market", isMut: true, isSigner: false },
+        { name: "creator", isMut: false, isSigner: true },
+      ],
+      args: [
+        { name: "simulationHash", type: { array: ["u8", 32] } },
+        { name: "yesProbability", type: "u64" },
+      ],
+    },
+    {
+      name: "buyShares",
+      accounts: [
+        { name: "market", isMut: true, isSigner: false },
+        { name: "position", isMut: true, isSigner: false },
+        { name: "buyer", isMut: true, isSigner: true },
+        { name: "systemProgram", isMut: false, isSigner: false },
+      ],
+      args: [
+        { name: "outcome", type: "bool" },
+        { name: "amount", type: "u64" },
+      ],
+    },
+  ],
+} as unknown as Idl;
 
 // ── MiroFish oracle caller ────────────────────────────────────────────────────
 
@@ -27,7 +75,6 @@ async function runPrismOracle(
   context: string,
   graphId?: string,
 ): Promise<OracleResult> {
-  // Path to oracle script — agent runs from prism/agent/, script is in prism/backend/
   const oracleScript = path.resolve("../backend/simulation/scripts/prism_oracle.py");
 
   const args = [
@@ -41,17 +88,15 @@ async function runPrismOracle(
   if (graphId) {
     args.push("--graph-id", graphId);
   } else {
-    // No Zep graph ID — use statistical fallback
     args.push("--fallback");
   }
 
   try {
     const { stdout } = await execFileAsync("python", args, {
-      timeout: 600_000, // 10 min max for live OASIS run
+      timeout: 600_000,
       env: { ...process.env, PYTHONUNBUFFERED: "1" },
     });
 
-    // The oracle script prints JSON at the end — find the last complete JSON block
     const jsonMatch = stdout.match(/\{[\s\S]*\}(?![\s\S]*\{)/);
     if (!jsonMatch) throw new Error("Oracle script did not return valid JSON");
     return JSON.parse(jsonMatch[0]) as OracleResult;
@@ -78,20 +123,39 @@ function getProgramId(runtime: IAgentRuntime): PublicKey {
   return new PublicKey(id);
 }
 
+function makeWallet(keypair: Keypair) {
+  return {
+    publicKey: keypair.publicKey,
+    signTransaction: async <T extends web3.Transaction | web3.VersionedTransaction>(tx: T): Promise<T> => {
+      if (tx instanceof web3.Transaction) tx.sign(keypair);
+      return tx;
+    },
+    signAllTransactions: async <T extends web3.Transaction | web3.VersionedTransaction>(txs: T[]): Promise<T[]> => {
+      return txs.map((tx) => {
+        if (tx instanceof web3.Transaction) tx.sign(keypair);
+        return tx;
+      });
+    },
+  };
+}
+
+async function isProgramDeployed(connection: Connection, programId: PublicKey): Promise<boolean> {
+  const info = await connection.getAccountInfo(programId);
+  return info !== null && info.executable;
+}
+
 // ── Intent parsing ────────────────────────────────────────────────────────────
 
 interface ParsedIntent {
   question: string;
   durationHours: number;
-  initialOdds: number; // basis points
+  initialOdds: number;
 }
 
 function parseCreateIntent(text: string): ParsedIntent {
-  // Extract question from quoted string or after "prism create"
   const quoted = text.match(/[""]([^""]+)[""]/);
   const question = quoted ? quoted[1] : text.replace(/prism\s+create/i, "").trim();
 
-  // Look for duration hint
   const hoursMatch = text.match(/(\d+)\s*h(?:our)?s?/i);
   const daysMatch = text.match(/(\d+)\s*days?/i);
   const durationHours = hoursMatch
@@ -100,7 +164,6 @@ function parseCreateIntent(text: string): ParsedIntent {
     ? parseInt(daysMatch[1]) * 24
     : 48;
 
-  // Default odds — later seeded by MiroFish simulation
   const oddsMatch = text.match(/(\d+)%/);
   const initialOdds = oddsMatch ? parseInt(oddsMatch[1]) * 100 : 5000;
 
@@ -154,7 +217,7 @@ const createMarketAction: Action = {
     });
 
     // ── Step 1: Run MiroFish oracle ──────────────────────────────────────────
-    let oracle: Awaited<ReturnType<typeof runPrismOracle>> | null = null;
+    let oracle: OracleResult | null = null;
     try {
       oracle = await runPrismOracle(intent.question, text, graphId || undefined);
 
@@ -167,7 +230,6 @@ const createMarketAction: Action = {
           `• NO probability : ${(100 - oracle.yes_probability * 100).toFixed(1)}% (${oracle.no_basis_points} bps)`,
           `• SHA-256 hash   : ${oracle.simulation_hash.slice(0, 16)}...`,
           ``,
-          `These odds are tamper-evident — the hash was committed before the real event unfolds.`,
           `Seeding market with MiroFish attestation...`,
         ].join("\n"),
         content: { oracle },
@@ -181,7 +243,7 @@ const createMarketAction: Action = {
     const yesBps = oracle?.yes_basis_points ?? 5000;
     const simulationHash = oracle?.simulation_hash ?? "0".repeat(64);
 
-    // ── Step 2: Derive market PDA ─────────────────────────────────────────────
+    // ── Step 2: Derive PDA + write to chain ───────────────────────────────────
     try {
       const connection = getConnection(runtime);
       const keypair = getKeypair(runtime);
@@ -195,28 +257,97 @@ const createMarketAction: Action = {
         programId
       );
 
+      const deployed = await isProgramDeployed(connection, programId);
+
+      if (!deployed) {
+        await callback({
+          text: [
+            `[PRISM] Market PDA derived (program not yet deployed):`,
+            `• PDA        : ${marketPda.toBase58()}`,
+            `• Question   : "${intent.question}"`,
+            `• Resolution : ${new Date(resolutionTs * 1000).toISOString()}`,
+            `• MiroFish odds: YES ${(yesBps / 100).toFixed(1)}% / NO ${((10000 - yesBps) / 100).toFixed(1)}%`,
+            `• Attestation: ${simulationHash.slice(0, 16)}...`,
+            ``,
+            `To write on-chain:`,
+            `  cd anchor && anchor build && anchor deploy`,
+            `  Then retry: prism create "${intent.question}"`,
+          ].join("\n"),
+          action: "PRISM_CREATE_MARKET",
+          content: {
+            marketPda: marketPda.toBase58(),
+            marketId,
+            question: intent.question,
+            resolutionTs,
+            yesBps,
+            simulationHash,
+            oracle,
+            onChain: false,
+          },
+        });
+        return;
+      }
+
+      // Program is deployed — send initialize_market transaction
+      const wallet = makeWallet(keypair);
+      const provider = new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
+      const program = new Program(PRISM_IDL, programId, provider);
+
+      await callback({ text: `[PRISM] Program deployed. Sending initialize_market transaction...` });
+
+      const txSig = await (program.methods as any)
+        .initializeMarket(marketId, intent.question, new BN(resolutionTs), new BN(yesBps))
+        .accounts({
+          market: marketPda,
+          creator: keypair.publicKey,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([keypair])
+        .rpc();
+
       await callback({
         text: [
-          `[PRISM] Market PDA derived: ${marketPda.toBase58()}`,
-          `• Question   : "${intent.question}"`,
-          `• Resolution : ${new Date(resolutionTs * 1000).toISOString()}`,
-          `• MiroFish odds: YES ${yesBps / 100}% / NO ${(10000 - yesBps) / 100}%`,
-          `• Attestation: ${simulationHash.slice(0, 16)}...`,
-          ``,
-          `⚠️  Full on-chain write: anchor build && anchor deploy`,
-          `   Then: seed_simulation_result(hash=[${oracle?.hash_bytes?.slice(0, 4).join(",")},...], yes_probability=${yesBps})`,
+          `[PRISM] Market deployed on-chain:`,
+          `• Tx signature : ${txSig}`,
+          `• PDA          : ${marketPda.toBase58()}`,
+          `• Question     : "${intent.question}"`,
+          `• Resolution   : ${new Date(resolutionTs * 1000).toISOString()}`,
+          `• Initial odds : YES ${(yesBps / 100).toFixed(1)}% / NO ${((10000 - yesBps) / 100).toFixed(1)}%`,
         ].join("\n"),
-        action: "PRISM_CREATE_MARKET",
-        content: {
-          marketPda: marketPda.toBase58(),
-          marketId,
-          question: intent.question,
-          resolutionTs,
-          yesBps,
-          simulationHash,
-          oracle,
-        },
       });
+
+      // Seed simulation hash on-chain if we have oracle data
+      if (oracle?.hash_bytes) {
+        const hashArr = new Array(32).fill(0);
+        oracle.hash_bytes.slice(0, 32).forEach((b, i) => { hashArr[i] = b; });
+
+        const seedTx = await (program.methods as any)
+          .seedSimulationResult(hashArr, new BN(yesBps))
+          .accounts({ market: marketPda, creator: keypair.publicKey })
+          .signers([keypair])
+          .rpc();
+
+        await callback({
+          text: [
+            `[PRISM] Simulation attestation seeded on-chain:`,
+            `• Tx : ${seedTx}`,
+            `• SHA-256: ${simulationHash}`,
+          ].join("\n"),
+          action: "PRISM_CREATE_MARKET",
+          content: {
+            marketPda: marketPda.toBase58(),
+            marketId,
+            question: intent.question,
+            resolutionTs,
+            yesBps,
+            simulationHash,
+            oracle,
+            txSig,
+            seedTx,
+            onChain: true,
+          },
+        });
+      }
     } catch (err: any) {
       await callback({
         text: `[PRISM] Solana error: ${err.message}\nEnsure SOLANA_PRIVATE_KEY and PRISM_PROGRAM_ID are set.`,
@@ -235,22 +366,86 @@ const buySharesAction: Action = {
     return text.includes("buy") && (text.includes("yes") || text.includes("no"));
   },
   handler: async (
-    _runtime: IAgentRuntime,
+    runtime: IAgentRuntime,
     message: Memory,
     _state: State | undefined,
     _options: Record<string, unknown>,
     callback: HandlerCallback
   ) => {
     const text = message.content.text ?? "";
-    const outcome = text.toLowerCase().includes("yes");
+    const isYes = text.toLowerCase().includes("yes");
     const amountMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:sol|lamports?)?/i);
-    const amount = amountMatch ? parseFloat(amountMatch[1]) : 0.1;
+    const amountSol = amountMatch ? parseFloat(amountMatch[1]) : 0.1;
+    const amountLamports = Math.round(amountSol * 1e9);
 
-    await callback({
-      text: `[PRISM] Buy order: ${outcome ? "YES" : "NO"} shares, amount: ${amount} SOL\nWill execute on-chain after program deployment.`,
-      action: "PRISM_BUY_SHARES",
-      content: { outcome, amount },
-    });
+    // Expect market PDA in message: "buy YES on <pda>"
+    const pdaMatch = text.match(/on\s+([1-9A-HJ-NP-Za-km-z]{32,44})/i);
+    if (!pdaMatch) {
+      await callback({
+        text: `[PRISM] Specify market PDA: buy YES on <PDA> 0.1 SOL`,
+      });
+      return;
+    }
+
+    try {
+      const connection = getConnection(runtime);
+      const keypair = getKeypair(runtime);
+      const programId = getProgramId(runtime);
+      const marketPda = new PublicKey(pdaMatch[1]);
+
+      const [positionPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("position"), keypair.publicKey.toBuffer(), marketPda.toBuffer()],
+        programId
+      );
+
+      const deployed = await isProgramDeployed(connection, programId);
+      if (!deployed) {
+        await callback({
+          text: [
+            `[PRISM] Buy order staged (program not deployed):`,
+            `• Market   : ${marketPda.toBase58()}`,
+            `• Outcome  : ${isYes ? "YES" : "NO"}`,
+            `• Amount   : ${amountSol} SOL (${amountLamports} lamports)`,
+            ``,
+            `Deploy anchor program first: cd anchor && anchor build && anchor deploy`,
+          ].join("\n"),
+          action: "PRISM_BUY_SHARES",
+          content: { marketPda: marketPda.toBase58(), isYes, amountSol, onChain: false },
+        });
+        return;
+      }
+
+      const wallet = makeWallet(keypair);
+      const provider = new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
+      const program = new Program(PRISM_IDL, programId, provider);
+
+      const txSig = await (program.methods as any)
+        .buyShares(isYes, new BN(amountLamports))
+        .accounts({
+          market: marketPda,
+          position: positionPda,
+          buyer: keypair.publicKey,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([keypair])
+        .rpc();
+
+      await callback({
+        text: [
+          `[PRISM] Shares purchased on-chain:`,
+          `• Tx       : ${txSig}`,
+          `• Market   : ${marketPda.toBase58()}`,
+          `• Outcome  : ${isYes ? "YES" : "NO"}`,
+          `• Amount   : ${amountSol} SOL`,
+        ].join("\n"),
+        action: "PRISM_BUY_SHARES",
+        content: { marketPda: marketPda.toBase58(), isYes, amountSol, txSig, onChain: true },
+      });
+    } catch (err: any) {
+      await callback({
+        text: `[PRISM] Solana error: ${err.message}`,
+      });
+    }
   },
 };
 

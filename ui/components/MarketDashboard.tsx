@@ -78,7 +78,7 @@ function PmxtMarketCard({ market }: { market: PmxtMarket }) {
 }
 
 export default function MarketDashboard() {
-  const { markets, pmxtMarkets, loading, error } = usePrismMarkets();
+  const { markets, pmxtMarkets, loading, error, programDeployed } = usePrismMarkets();
 
   return (
     <div className="flex flex-col gap-4 h-full">

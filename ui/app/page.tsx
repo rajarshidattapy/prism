@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import TerminalUI from "../components/TerminalUI";
 import MarketDashboard from "../components/MarketDashboard";
 import { useSolanaWallet } from "../hooks/useSolanaWallet";
 import { shortenAddress, formatSol } from "../lib/utils";
 
 type Tab = "terminal" | "markets" | "simulation";
+
+const AGENT_URL = (process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3001").replace("ws://", "http://");
+const BACKEND_URL = "http://localhost:5001";
+const AGENT_ID = "PRISM%20Orchestrator";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<Tab>("terminal");
@@ -75,10 +79,7 @@ export default function HomePage() {
         {activeTab === "markets" && (
           <div className="h-full overflow-y-auto">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 p-4 h-full">
-              {/* Left: Market dashboard */}
               <MarketDashboard />
-
-              {/* Right: Agent activity log */}
               <div className="flex flex-col gap-3">
                 <h2 className="text-prism-yellow text-xs font-bold tracking-widest uppercase">
                   ⬡ Agent Activity
@@ -100,16 +101,61 @@ export default function HomePage() {
 }
 
 // ── Agent Activity Feed ───────────────────────────────────────────────────────
+// Polls the agent's memory endpoint for real recent events.
 
-const MOCK_EVENTS = [
-  { ts: "14:32:01", type: "sim", text: "MiroFish simulation dispatched to Nosana (job: nos-7f3a)" },
-  { ts: "14:32:45", type: "chain", text: "Market PDA initialized: PRiSM1111...3f2e | YES: 62%" },
-  { ts: "14:33:10", type: "trade", text: "PMXT: Arbitrage edge detected on Polymarket ETH ETF (+6.2%)" },
-  { ts: "14:33:22", type: "oracle", text: "Switchboard consensus: Twitter 64% | Reddit 58% | Farcaster 61%" },
-  { ts: "14:34:05", text: "Auto-monitor: Position market-001 | PnL: +3.2% (threshold: +20%)", type: "monitor" },
-];
+interface AgentEvent {
+  id: string;
+  ts: string;
+  type: string;
+  text: string;
+}
+
+function classifyEvent(text: string): string {
+  if (text.includes("MiroFish") || text.includes("simulation")) return "sim";
+  if (text.includes("PDA") || text.includes("on-chain") || text.includes("Solana")) return "chain";
+  if (text.includes("Polymarket") || text.includes("Kalshi") || text.includes("trade")) return "trade";
+  if (text.includes("oracle") || text.includes("Switchboard") || text.includes("sentiment")) return "oracle";
+  return "monitor";
+}
 
 function AgentActivityFeed() {
+  const [events, setEvents] = useState<AgentEvent[]>([]);
+  const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchEvents() {
+      try {
+        const res = await fetch(
+          `${AGENT_URL}/${AGENT_ID}/terminal/memories?count=20`,
+          { signal: AbortSignal.timeout(3000) }
+        );
+        if (!res.ok) throw new Error("not ok");
+        const data = await res.json();
+        if (cancelled) return;
+        setAgentOnline(true);
+
+        const memories: any[] = data.memories ?? [];
+        const parsed: AgentEvent[] = memories
+          .filter((m: any) => m.content?.text)
+          .map((m: any) => ({
+            id: m.id,
+            ts: new Date(m.createdAt).toLocaleTimeString("en-US", { hour12: false }),
+            type: classifyEvent(m.content.text),
+            text: m.content.text.slice(0, 120),
+          }));
+        setEvents(parsed.reverse());
+      } catch {
+        if (!cancelled) setAgentOnline(false);
+      }
+    }
+
+    fetchEvents();
+    const interval = setInterval(fetchEvents, 8000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
   const colors: Record<string, string> = {
     sim: "text-prism-purple",
     chain: "text-prism-green",
@@ -118,70 +164,116 @@ function AgentActivityFeed() {
     monitor: "text-[#c8d0e8]",
   };
 
+  if (agentOnline === false) {
+    return (
+      <div className="card p-3 flex-1 flex items-center justify-center">
+        <span className="text-prism-dim text-xs">Agent offline — start with: bun run dev:agent</span>
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="card p-3 flex-1 flex items-center justify-center">
+        <span className="text-prism-dim text-xs animate-pulse">
+          {agentOnline === null ? "Connecting to agent..." : "No activity yet — try a terminal command"}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="card p-3 space-y-2 flex-1">
-      {MOCK_EVENTS.map((e, i) => (
-        <div key={i} className="flex gap-3 text-[11px]">
+    <div className="card p-3 space-y-2 flex-1 overflow-y-auto">
+      {events.map((e) => (
+        <div key={e.id} className="flex gap-3 text-[11px]">
           <span className="text-prism-dim shrink-0">{e.ts}</span>
-          <span className={colors[e.type] ?? "text-[#c8d0e8]"}>{e.text}</span>
+          <span className={`${colors[e.type] ?? "text-[#c8d0e8]"} line-clamp-2`}>{e.text}</span>
         </div>
       ))}
-      <div className="flex gap-3 text-[11px] animate-pulse">
-        <span className="text-prism-dim">now</span>
-        <span className="text-prism-green">Monitoring markets<span className="cursor" /></span>
-      </div>
     </div>
   );
 }
 
 // ── Simulation Panel ──────────────────────────────────────────────────────────
+// Calls the real backend oracle pipeline. No Math.random().
+
+interface OracleResult {
+  question: string;
+  yes_probability: number;
+  yes_basis_points: number;
+  no_basis_points: number;
+  simulation_hash: string;
+  simulation_id: string;
+  platform: string;
+  elapsed_seconds?: number;
+  n_agents?: number;
+  persona_breakdown?: { persona: string; avg_yes_probability: number }[];
+}
 
 function SimulationPanel() {
   const [question, setQuestion] = useState("");
   const [context, setContext] = useState("");
   const [nAgents, setNAgents] = useState(10000);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<OracleResult | null>(null);
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(2000) })
+      .then((r) => setBackendOnline(r.ok))
+      .catch(() => setBackendOnline(false));
+  }, []);
 
   const runSim = async () => {
+    if (!question.trim()) return;
     setRunning(true);
     setResult(null);
+    setError(null);
 
-    // Simulate locally (calls Python via API in production)
-    await new Promise((r) => setTimeout(r, 2000));
+    const t0 = Date.now();
 
-    // Mock result for UI demo
-    const yesProbability = 0.3 + Math.random() * 0.5;
-    setResult({
-      question,
-      n_agents: nAgents,
-      yes_probability: yesProbability.toFixed(4),
-      yes_basis_points: Math.round(yesProbability * 10000),
-      elapsed_seconds: (1.2 + Math.random() * 2).toFixed(2),
-      simulation_hash: Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16)
-      ).join(""),
-      persona_breakdown: [
-        { persona: "retail_bull", avg_yes_probability: (yesProbability + 0.1).toFixed(3) },
-        { persona: "crypto_native", avg_yes_probability: (yesProbability + 0.05).toFixed(3) },
-        { persona: "institutional_trader", avg_yes_probability: yesProbability.toFixed(3) },
-        { persona: "bear_skeptic", avg_yes_probability: (yesProbability - 0.15).toFixed(3) },
-        { persona: "defi_degen", avg_yes_probability: (yesProbability + 0.18).toFixed(3) },
-      ],
-    });
-    setRunning(false);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/simulation/oracle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, context, n_agents: nAgents }),
+      });
+
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error ?? "Oracle failed");
+
+      const data: OracleResult = {
+        ...json.data,
+        elapsed_seconds: ((Date.now() - t0) / 1000),
+        n_agents: nAgents,
+      };
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message ?? "Unknown error");
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <div>
-        <h2 className="text-prism-purple text-xs font-bold tracking-widest uppercase mb-4">
+        <h2 className="text-prism-purple text-xs font-bold tracking-widest uppercase mb-2">
           ⬢ MiroFish OASIS Simulation
         </h2>
-        <p className="text-prism-dim text-xs mb-4">
-          Simulate N synthetic agents across persona archetypes to generate a verifiable baseline probability
-          for a prediction market question. The SHA-256 attestation can be posted on-chain.
+        <p className="text-prism-dim text-xs mb-1">
+          Runs the real oracle pipeline — statistical agent simulation across persona archetypes.
+          Output is a verifiable SHA-256 attestation that can be committed on-chain before the real event.
         </p>
+        {backendOnline === false && (
+          <div className="text-prism-red text-[10px] mt-1">
+            ⚠ Backend offline — start with: <span className="text-prism-yellow">cd backend && venv311/Scripts/python.exe run.py</span>
+          </div>
+        )}
+        {backendOnline === true && (
+          <div className="text-prism-green text-[10px] mt-1">● Backend online</div>
+        )}
       </div>
 
       {/* Input form */}
@@ -192,7 +284,7 @@ function SimulationPanel() {
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder='Will ETH sentiment match OASIS 62% bullish within 48h?'
+            placeholder="Will ETH sentiment match OASIS 62% bullish within 48h?"
             className="w-full bg-[#0a0a0f] border border-[#1a1a2e] text-[#c8d0e8] text-xs px-3 py-2 outline-none focus:border-[#9945ff] transition-colors"
           />
         </div>
@@ -222,7 +314,7 @@ function SimulationPanel() {
           </div>
           <button
             onClick={runSim}
-            disabled={running || !question}
+            disabled={running || !question.trim() || backendOnline === false}
             className="px-4 py-2 text-xs font-bold border border-[#9945ff] text-prism-purple hover:bg-[#9945ff] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {running ? "Running simulation..." : "Run MiroFish →"}
@@ -230,65 +322,84 @@ function SimulationPanel() {
         </div>
       </div>
 
-      {/* Result */}
       {running && (
         <div className="card p-4 space-y-2">
           <div className="text-prism-green text-xs animate-pulse">
-            Running {nAgents.toLocaleString()} agents across 6 persona archetypes...
+            Running oracle pipeline for {nAgents.toLocaleString()} agents...
           </div>
-          <div className="progress-bar" style={{ animationDuration: "2s" }} />
+          <div className="progress-bar" />
+        </div>
+      )}
+
+      {error && !running && (
+        <div className="card p-4 border border-[#ff3366]">
+          <div className="text-prism-red text-xs font-bold mb-1">Oracle Error</div>
+          <div className="text-prism-dim text-[10px] font-mono">{error}</div>
         </div>
       )}
 
       {result && !running && (
         <div className="card p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-prism-green text-xs font-bold">Simulation Complete</span>
-            <span className="text-prism-dim text-[10px]">{result.elapsed_seconds}s elapsed</span>
+            <span className="text-prism-green text-xs font-bold">
+              Simulation Complete
+              <span className="text-prism-dim ml-2 font-normal">
+                [{result.platform ?? "statistical"}]
+              </span>
+            </span>
+            <span className="text-prism-dim text-[10px]">
+              {result.elapsed_seconds?.toFixed(1)}s · {result.n_agents?.toLocaleString()} agents
+            </span>
           </div>
 
-          {/* Main result */}
           <div className="flex gap-8">
             <div>
               <div className="text-prism-dim text-[10px] uppercase tracking-wider">YES Probability</div>
               <div className="text-prism-green text-2xl font-bold glow-green">
                 {(result.yes_probability * 100).toFixed(1)}%
               </div>
-              <div className="text-prism-dim text-[10px]">{result.yes_basis_points} basis points</div>
+              <div className="text-prism-dim text-[10px]">{result.yes_basis_points} bps</div>
             </div>
             <div>
               <div className="text-prism-dim text-[10px] uppercase tracking-wider">NO Probability</div>
               <div className="text-prism-red text-2xl font-bold">
                 {(100 - result.yes_probability * 100).toFixed(1)}%
               </div>
+              <div className="text-prism-dim text-[10px]">{result.no_basis_points} bps</div>
             </div>
           </div>
 
-          {/* Persona breakdown */}
-          <div>
-            <div className="text-prism-dim text-[10px] uppercase tracking-wider mb-2">Persona Breakdown</div>
-            <div className="space-y-1">
-              {result.persona_breakdown.map((p: any) => (
-                <div key={p.persona} className="flex justify-between text-xs">
-                  <span className="text-prism-dim">{p.persona.replace("_", " ")}</span>
-                  <span className="text-[#c8d0e8]">
-                    {(parseFloat(p.avg_yes_probability) * 100).toFixed(1)}% YES
-                  </span>
-                </div>
-              ))}
+          {result.persona_breakdown && result.persona_breakdown.length > 0 && (
+            <div>
+              <div className="text-prism-dim text-[10px] uppercase tracking-wider mb-2">Persona Breakdown</div>
+              <div className="space-y-1">
+                {result.persona_breakdown.map((p) => (
+                  <div key={p.persona} className="flex justify-between text-xs">
+                    <span className="text-prism-dim">{p.persona.replace(/_/g, " ")}</span>
+                    <span className="text-[#c8d0e8]">
+                      {(p.avg_yes_probability * 100).toFixed(1)}% YES
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Attestation hash */}
           <div className="border-t border-[#1a1a2e] pt-3">
             <div className="text-prism-dim text-[10px] uppercase tracking-wider mb-1">
-              SHA-256 Attestation Hash
+              SHA-256 Attestation
             </div>
             <div className="text-prism-cyan text-[10px] font-mono break-all">
               {result.simulation_hash}
             </div>
+            <div className="text-prism-dim text-[10px] mt-2">
+              Simulation ID: <span className="text-[#c8d0e8]">{result.simulation_id}</span>
+            </div>
             <div className="text-prism-dim text-[10px] mt-1">
-              Post on-chain via: <span className="text-prism-green">seed_simulation_result(hash, {result.yes_basis_points})</span>
+              On-chain call:{" "}
+              <span className="text-prism-green font-mono">
+                seed_simulation_result(hash, {result.yes_basis_points})
+              </span>
             </div>
           </div>
         </div>
