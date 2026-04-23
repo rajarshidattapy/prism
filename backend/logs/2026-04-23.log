@@ -1,0 +1,55 @@
+[2026-04-23 18:02:44] INFO [mirofish.create_app:38] ==================================================
+[2026-04-23 18:02:44] INFO [mirofish.create_app:39] MiroFish Backend 启动中...
+[2026-04-23 18:02:44] INFO [mirofish.create_app:40] ==================================================
+[2026-04-23 18:02:44] INFO [mirofish.create_app:49] 已注册模拟进程清理函数
+[2026-04-23 18:02:44] INFO [mirofish.create_app:77] MiroFish Backend 启动完成
+[2026-04-23 18:03:24] INFO [mirofish.create_app:36] ==================================================
+[2026-04-23 18:03:24] INFO [mirofish.create_app:37] MiroFish Backend 启动中...
+[2026-04-23 18:03:24] INFO [mirofish.create_app:38] ==================================================
+[2026-04-23 18:03:24] INFO [mirofish.create_app:47] 已注册模拟进程清理函数
+[2026-04-23 18:03:25] INFO [mirofish.create_app:75] MiroFish Backend 启动完成
+[2026-04-23 18:03:34] INFO [mirofish.create_app:34] ==================================================
+[2026-04-23 18:03:34] INFO [mirofish.create_app:35] MiroFish Backend 启动中...
+[2026-04-23 18:03:34] INFO [mirofish.create_app:36] ==================================================
+[2026-04-23 18:03:34] INFO [mirofish.create_app:45] 已注册模拟进程清理函数
+[2026-04-23 18:03:34] INFO [mirofish.create_app:73] MiroFish Backend 启动完成
+[2026-04-23 18:03:38] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:03:38] INFO [mirofish.create_app:34] MiroFish Backend 启动中...
+[2026-04-23 18:03:38] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:03:38] INFO [mirofish.create_app:44] 已注册模拟进程清理函数
+[2026-04-23 18:03:38] INFO [mirofish.create_app:72] MiroFish Backend 启动完成
+[2026-04-23 18:03:45] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:03:45] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:03:45] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:03:46] INFO [mirofish.create_app:44] 已注册模拟进程清理函数
+[2026-04-23 18:03:46] INFO [mirofish.create_app:72] MiroFish Backend 启动完成
+[2026-04-23 18:03:53] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:03:53] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:03:53] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:03:53] INFO [mirofish.create_app:44] 
+[2026-04-23 18:03:53] INFO [mirofish.create_app:72] MiroFish Backend 启动完成
+[2026-04-23 18:04:06] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:04:06] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:04:06] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:04:06] INFO [mirofish.create_app:44] 
+[2026-04-23 18:04:06] INFO [mirofish.create_app:72] MiroFish Backend 启动完成
+[2026-04-23 18:04:10] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:04:10] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:04:10] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:04:10] INFO [mirofish.create_app:44] 
+[2026-04-23 18:04:10] INFO [mirofish.create_app:72] MiroFish Backend 启动完成
+[2026-04-23 18:04:15] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:04:15] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:04:15] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:04:15] INFO [mirofish.create_app:44] 
+[2026-04-23 18:04:15] INFO [mirofish.create_app:72] MiroFish Backend 启动完成
+[2026-04-23 18:04:19] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:04:19] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:04:19] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:04:19] INFO [mirofish.create_app:44] 
+[2026-04-23 18:04:19] INFO [mirofish.create_app:72] MiroFish Backend
+[2026-04-23 18:04:26] INFO [mirofish.create_app:33] ==================================================
+[2026-04-23 18:04:26] INFO [mirofish.create_app:34] MiroFish Backend
+[2026-04-23 18:04:26] INFO [mirofish.create_app:35] ==================================================
+[2026-04-23 18:04:26] INFO [mirofish.create_app:44] 
+[2026-04-23 18:04:26] INFO [mirofish.create_app:72] MiroFish Backend running!

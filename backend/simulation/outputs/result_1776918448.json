@@ -1,0 +1,42 @@
+{
+  "question": "Will ETH break $5k before Q2 end?",
+  "context": "ETF approved, institutional inflow strong",
+  "n_agents": 1000,
+  "yes_probability": 0.7764,
+  "yes_basis_points": 7764,
+  "no_basis_points": 2236,
+  "elapsed_seconds": 0.01,
+  "persona_breakdown": [
+    {
+      "persona": "retail_bull",
+      "n_agents": 300,
+      "avg_yes_probability": 0.7942
+    },
+    {
+      "persona": "crypto_native",
+      "n_agents": 200,
+      "avg_yes_probability": 0.7782
+    },
+    {
+      "persona": "institutional_trader",
+      "n_agents": 200,
+      "avg_yes_probability": 0.7686
+    },
+    {
+      "persona": "bear_skeptic",
+      "n_agents": 150,
+      "avg_yes_probability": 0.7348
+    },
+    {
+      "persona": "defi_degen",
+      "n_agents": 100,
+      "avg_yes_probability": 0.8033
+    },
+    {
+      "persona": "neutral_observer",
+      "n_agents": 50,
+      "avg_yes_probability": 0.7652
+    }
+  ],
+  "timestamp": 1776918448
+}

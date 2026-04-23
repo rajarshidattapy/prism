@@ -27,8 +27,8 @@ async function runPrismOracle(
   context: string,
   graphId?: string,
 ): Promise<OracleResult> {
-  // Path to oracle script relative to repo root
-  const oracleScript = path.resolve("simulation/scripts/prism_oracle.py");
+  // Path to oracle script — agent runs from prism/agent/, script is in prism/backend/
+  const oracleScript = path.resolve("../backend/simulation/scripts/prism_oracle.py");
 
   const args = [
     oracleScript,

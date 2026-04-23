@@ -1,0 +1,42 @@
+{
+  "question": "Will 60%+ of simulated Twitter users react negatively to the new crypto tax policy?",
+  "context": "Government announces 30% capital gains tax on all crypto transactions above 000",
+  "n_agents": 10000,
+  "yes_probability": 0.5128,
+  "yes_basis_points": 5128,
+  "no_basis_points": 4872,
+  "elapsed_seconds": 0.12,
+  "persona_breakdown": [
+    {
+      "persona": "retail_bull",
+      "n_agents": 3000,
+      "avg_yes_probability": 0.5374
+    },
+    {
+      "persona": "crypto_native",
+      "n_agents": 2000,
+      "avg_yes_probability": 0.5155
+    },
+    {
+      "persona": "institutional_trader",
+      "n_agents": 2000,
+      "avg_yes_probability": 0.5001
+    },
+    {
+      "persona": "bear_skeptic",
+      "n_agents": 1500,
+      "avg_yes_probability": 0.4554
+    },
+    {
+      "persona": "defi_degen",
+      "n_agents": 1000,
+      "avg_yes_probability": 0.5521
+    },
+    {
+      "persona": "neutral_observer",
+      "n_agents": 500,
+      "avg_yes_probability": 0.4996
+    }
+  ],
+  "timestamp": 1776920059
+}
